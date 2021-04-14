@@ -1,0 +1,9 @@
+.*
+db_handle.py
+fireflybot2/
+logs/
+*.out
+*.err
+*.pyc
+*.cnf
+__pycache__/
