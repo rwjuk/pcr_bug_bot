@@ -65,7 +65,7 @@ def accept_revision(rev_id):
 def dump_acceptable_rev_onwiki(rev_id):
         page = pywikibot.Page(site, "User:FireflyBot_II/brfa_pc_log")
         text = page.get()
-        page.put(newtext="{} - accepting {}\n{}".format(datetime.datetime.now(), rev_id, text), summary="*Logging acceptance of rev [[Special:Diff/{0}|{0}]]".format(rev_id))
+        page.put(newtext="*{0} - accepting  [[Special:Diff/{1}|{1}]]\n{2}".format(datetime.datetime.now(), rev_id, text), summary="Logging acceptance of rev [[Special:Diff/{0}|{0}]]".format(rev_id))
 
 def process_buggy_revs():
         for page_id,last_accepted_rev_id in get_pages_with_pending_revs():
