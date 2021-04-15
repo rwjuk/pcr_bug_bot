@@ -23,17 +23,17 @@ def get_pages_with_pending_revs():
 
 def get_pending_revs_for_db(page_id, last_accepted_rev):
         cur = tf_conn.cursor()
-        cur.execute("select rev_id from revision inner join actor on rev_actor=actor_id inner join user on user_id=actor_user left join user_groups on ug_user=user_id where (ug_group='extendedconfirmed' or ug_group='confirmed' or ug_group='autoconfirmed' or ug_group='sysop'or ug_group='bot') and rev_page='{}' and rev_id>{}".format(page_id, last_accepted_rev))
+        cur.execute("select rev_id from revision inner join actor on rev_actor=actor_id inner join user on user_id=actor_user left join user_groups on ug_user=user_id where (ug_group='extendedconfirmed' or ug_group='confirmed' or ug_group='autoconfirmed' or ug_group='sysop'or ug_group='bot') and rev_page=%s and rev_id>%s", (page_id, last_accepted_rev,))
         return [x[0] for x in cur.fetchall()]
 
 def add_rev_to_db(rev_id):
         cur = conn.cursor()
-        cur.execute("insert ignore into reviewed_revs (rev_id) values('{}');".format(rev_id))
+        cur.execute("insert ignore into reviewed_revs (rev_id) values('%s');", (rev_id))
         conn.commit()
 
 def is_rev_in_db(rev_id):
         cur = conn.cursor()
-        ret = cur.execute("select 1 from reviewed_revs where rev_id={}".format(rev_id))
+        ret = cur.execute("select 1 from reviewed_revs where rev_id=%s", (rev_id))
         return (ret > 0)
 
 def get_auto_acceptable_revs(page_id, last_accepted_rev):
@@ -41,7 +41,7 @@ def get_auto_acceptable_revs(page_id, last_accepted_rev):
         current_rev = last_accepted_rev
         aa_revs = []
         while current_rev is not None:
-                cur.execute("select rev_id from revision inner join actor on rev_actor=actor_id inner join user on user_id=actor_user left join user_groups on ug_user=user_id where (ug_group='extendedconfirmed' or ug_group='confirmed' or ug_group='autoconfirmed' or ug_group='sysop'or ug_group='bot') and rev_parent_id='{}' and rev_page='{}'".format(last_accepted_rev, page_id))
+                cur.execute("select rev_id from revision inner join actor on rev_actor=actor_id inner join user on user_id=actor_user left join user_groups on ug_user=user_id where (ug_group='extendedconfirmed' or ug_group='confirmed' or ug_group='autoconfirmed' or ug_group='sysop'or ug_group='bot') and rev_parent_id=%s and rev_page=%s", (current_rev, page_id,))
                 data = cur.fetchone()
                 if data is None or len(data) == 0:
                         current_rev = None
@@ -59,7 +59,7 @@ def get_auto_acceptable_revs(page_id, last_accepted_rev):
 
 def accept_revision(rev_id):
         csrf = site.get_tokens(["csrf"])['csrf']
-        accept_request = pywikibot.data.api.Request(site=site, parameters={'action':'review', 'revid':rev_id, 'comment':'(BOT) Revision should have automatically been accepted as user meets auto-accept threshold. See [[phab:T233561]]', 'token':csrf})
+        accept_request = pywikibot.data.api.Request(site=site, parameters={'action':'review', 'revid':rev_id, 'comment':'(BOT) Revision should have automatically been accepted as user meets auto-accept threshold. See [[phab:T233561]] or [[User:FireflyBot_II/Task_1_details|here]].', 'token':csrf})
         return accept_request.submit()['review']
 
 def dump_acceptable_rev_onwiki(rev_id):
@@ -71,8 +71,8 @@ def process_buggy_revs():
         for page_id,last_accepted_rev_id in get_pages_with_pending_revs():
                 aa_revs = get_auto_acceptable_revs(page_id, int(last_accepted_rev_id))
                 for aa_rev in aa_revs:
-                        #accept_revision(aa_rev)
-                        dump_acceptable_rev_onwiki(aa_rev)
+                        accept_revision(aa_rev)
+                        #dump_acceptable_rev_onwiki(aa_rev)
                 for rev in get_pending_revs_for_db(page_id, int(last_accepted_rev_id)):
                         add_rev_to_db(rev)
 
